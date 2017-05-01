@@ -52,6 +52,7 @@ public:
 	void reset();
 	void mr1_test();
 	void hr1_test();
+	void easytest(double goalx, double goaly);
 };
 
 void ship::init() {
@@ -75,7 +76,7 @@ void ship::init() {
 	omegainit = omega;
 }
 
-void ship::reset() {
+void ship::reset()  {
 	x = xinit;
 	y = yinit;
 	theta = thetainit;
@@ -84,7 +85,9 @@ void ship::reset() {
 }
 
 void ship::xcalc() {
+	cout << "v " << v << " theta " << theta << " dt " << dt << endl;
 	x = x + (v * sin(theta) * dt);
+	cout << "new x " << x << endl;
 }
 
 void ship::ycalc() {
@@ -99,22 +102,15 @@ void ship::omegacalc() {
 	omega = omega + ((u - omega) * dt / T);
 }
 
-//void ship::endsimulation(int min, int max) {
-//    if (x < min || y < min || x > max || y > max) {
-//   	 cout << "beyond bounds. breaking" << endl;
-//   	 stopcheck = 1;
-//    }
-//}
-
 void ship::simulate() {
 	xprev = x;
 	yprev = y;
 	thetaprev = theta;
 	omegaprev = omega;
-	xcalc();
-	ycalc();
-	thetacalc();
 	omegacalc();
+	thetacalc();
+	ycalc();
+	xcalc();
 }
 
 void ship::mr1_test() {
@@ -129,6 +125,17 @@ void ship::hr1_test() {
 	thetainit = 0;
 }
 
+void ship::easytest(double goalx, double goaly) {
+	x = goalx - 1;
+	xinit = x;
+	y = goaly - 2.5;
+	yinit = y;
+	theta = 0;
+	thetainit = 0;
+	omega = 0;
+	omegainit = 0;
+}
+
 class goal {
 public:
 	double x1;
@@ -141,7 +148,7 @@ public:
 void goal::init(int max) {
 	x1 = rand() % max;
 	y1 = 10 + (rand() % max - 10);
-	x2 = x1;
+	x2 = x1 + 1;
 	y2 = y1 - 10;
 }
 
@@ -189,28 +196,48 @@ int pass_check(ship& agent, goal& goal) {
 	double yinter;
 	double check1;
 	double check2;
+	double epsilon = 0.01;
+	double alpha;
 	int pass;
 	x1 = agent.xprev;
+	cout << "x1 = " << x1 << endl;
 	x2 = agent.x;
+	cout << "x2 = " << x2 << endl;
 	x3 = goal.x1;
+	cout << "x3 = " << x3 << endl;
 	x4 = goal.x2;
+	cout << "x4 = " << x4 << endl;
 	y1 = agent.yprev;
+	cout << "y1 = " << y1 << endl;
 	y2 = agent.y;
+	cout << "y2 = " << y2 << endl;
 	y3 = goal.y1;
+	cout << "y3 = " << y3 << endl;
 	y4 = goal.y2;
+	cout << "y4 = " << y4 << endl;
 	m1 = (y2 - y1) / (x2 - x1);
+	cout << "m1 " << m1 << endl;
 	m2 = (y4 - y3) / (x4 - x3);
-	b1 = y1 - m1 * x1;
-	b2 = y3 - m2 * x3;
+	cout << "m2 " << m2 << endl;
+	b1 = y1 - (m1 * x1);
+	cout << "b1  " << b1 << endl;
+	b2 = y3 - (m2 * x3);
+	cout << "b2 " << b2 << endl;
 	xinter = (b2 - b1) / (m1 - m2);
-	check1 = m1 * xinter + b1;
-	check2 = m2 * xinter + b2;
-	if (check1 == check2) {
+	cout << "x intercept " << xinter << endl;
+	check1 = (m1 * xinter) + b1;
+	cout << "check 1 " << check1 << endl;
+	check2 = (m2 * xinter) + b2;
+	cout << "check 2 " << check2 << endl;
+	alpha = fabs(check1 - check2);
+	cout << "alpha " << alpha << endl;
+	if (alpha < epsilon) {
 		pass = 1;
 	}
 	else {
 		pass = 0;
 	}
+	cout << "pass " << pass << endl;
 	return pass;
 }
 
@@ -290,6 +317,7 @@ vector<policy> simulate(ship& boat, goal& finish, neural_network& NN,
 	int pass, int pop_size, int popsize, vector<policy> population, int min, int max) {
 	for (int sim = 0; sim < popsize; sim++) {
 		//cout << "starting for loop" << endl;
+		int test;
 		int tstep = 0;
 		double distance;
 		population.at(sim).xpath.push_back(boat.x);
@@ -330,6 +358,7 @@ vector<policy> simulate(ship& boat, goal& finish, neural_network& NN,
 			}
 			pass = pass_check(boat, finish);
 			//cout << "distance after one timestep " << distance << endl;
+			cin >> test;
 		}
 		population.at(sim).fitness = distance;
 		//cout << "final x " << boat.x << " final y " << boat.y << endl;
@@ -385,6 +414,21 @@ int main()
 		population.push_back(A);
 	}
 	//cout << "population created" << endl;
+
+	int easy;
+	cout << "easy test? 1/Y, 2/N" << endl;
+	cin >> easy;
+	double inp1;
+	double inp2;
+	inp1 = finish.x1;
+	inp2 = finish.y1;
+	if (easy == 1) {
+		boat.easytest(inp1, inp2);
+	}
+	cout << "x " << boat.x << endl;
+	cout << "y " << boat.y << endl;
+	cout << "theta " << boat.theta << endl;
+	cout << "omega " << boat.omega << endl;
 
 	////////////////////////////////
 	//   		 SIMULATE   	   //
